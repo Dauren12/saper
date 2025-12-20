@@ -1,0 +1,1484 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Сапёр PRO</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --cell-size: 32px;
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #2d2d2d;
+            --text-primary: #ffffff;
+            --cell-closed: #3a3a3a;
+            --cell-open: #555;
+            --border: #444;
+            --mine: #ff4444;
+            --flag: #ffaa00;
+            --num-1: #2196F3;
+            --num-2: #4CAF50;
+            --num-3: #f44336;
+            --num-4: #9C27B0;
+            --shadow: rgba(0, 0, 0, 0.3);
+        }
+
+        .light-theme {
+            --bg-primary: #f0f0f0;
+            --bg-secondary: #ffffff;
+            --text-primary: #333333;
+            --cell-closed: #cccccc;
+            --cell-open: #e0e0e0;
+            --border: #aaaaaa;
+            --mine: #ff4444;
+            --flag: #ffaa00;
+            --num-1: #1976D2;
+            --num-2: #388E3C;
+            --num-3: #D32F2F;
+            --num-4: #7B1FA2;
+            --shadow: rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            margin-bottom: 25px;
+            padding-top: 10px;
+        }
+
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            color: var(--text-primary);
+        }
+
+        .subtitle {
+            color: #888;
+            margin-bottom: 20px;
+        }
+
+        /* Game Info */
+        .game-info {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+
+        .info-box {
+            background: var(--bg-secondary);
+            padding: 15px 25px;
+            border-radius: 10px;
+            min-width: 140px;
+            text-align: center;
+            box-shadow: 0 4px 6px var(--shadow);
+        }
+
+        .info-value {
+            font-size: 2.2rem;
+            font-weight: bold;
+            margin: 5px 0;
+            color: var(--num-1);
+        }
+
+        .info-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        /* Controls */
+        .controls {
+            background: var(--bg-secondary);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 12px var(--shadow);
+        }
+
+        .control-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+
+        select, button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: var(--cell-closed);
+            color: var(--text-primary);
+            min-width: 160px;
+        }
+
+        button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-weight: 500;
+        }
+
+        button:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #4CAF50, #2E7D32);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #2196F3, #0D47A1);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #f44336, #c62828);
+            color: white;
+        }
+
+        /* Game Board */
+        .game-board-container {
+            background: var(--bg-secondary);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 12px var(--shadow);
+            overflow: auto;
+            display: flex;
+            justify-content: center;
+        }
+
+        #game-board {
+            display: grid;
+            gap: 2px;
+            background: var(--border);
+            border: 3px solid var(--border);
+            border-radius: 5px;
+            margin: 0 auto;
+        }
+
+        .cell {
+            width: var(--cell-size);
+            height: var(--cell-size);
+            background: var(--cell-closed);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            transition: background-color 0.2s;
+        }
+
+        .cell:hover:not(.revealed):not(.flagged) {
+            background: #555;
+        }
+
+        .cell.revealed {
+            background: var(--cell-open);
+            cursor: default;
+        }
+
+        .cell.mine {
+            background: var(--mine);
+            color: white;
+        }
+
+        .cell.flagged {
+            background: var(--flag);
+            color: white;
+        }
+
+        .cell.question {
+            background: #777;
+            color: white;
+        }
+
+        .cell.num-1 { color: var(--num-1); }
+        .cell.num-2 { color: var(--num-2); }
+        .cell.num-3 { color: var(--num-3); }
+        .cell.num-4 { color: var(--num-4); }
+        .cell.num-5 { color: #FF9800; }
+        .cell.num-6 { color: #009688; }
+        .cell.num-7 { color: #795548; }
+        .cell.num-8 { color: #607D8B; }
+
+        /* Bottom Controls */
+        .bottom-controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        /* Theme Toggle */
+        #themeToggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: none;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 1.3rem;
+            box-shadow: 0 4px 8px var(--shadow);
+            cursor: pointer;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: var(--bg-secondary);
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 28px;
+            color: var(--text-primary);
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        .close-btn:hover {
+            background: var(--cell-closed);
+        }
+
+        .section {
+            margin: 25px 0;
+            padding: 20px;
+            background: var(--bg-primary);
+            border-radius: 10px;
+        }
+
+        .section h3 {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Mobile Controls */
+        .mobile-controls {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: var(--bg-secondary);
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.3);
+            z-index: 99;
+        }
+
+        .mobile-control-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .mobile-btn {
+            flex: 1;
+            padding: 12px;
+            border-radius: 10px;
+            border: none;
+            background: var(--cell-closed);
+            color: var(--text-primary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* Game Messages */
+        .game-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 30px 50px;
+            border-radius: 20px;
+            font-size: 2rem;
+            font-weight: bold;
+            text-align: center;
+            z-index: 999;
+            display: none;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
+            animation: popIn 0.5s ease;
+        }
+
+        @keyframes popIn {
+            from { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+            to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+
+        .win-message {
+            background: linear-gradient(135deg, #4CAF50, #2E7D32);
+            color: white;
+        }
+
+        .lose-message {
+            background: linear-gradient(135deg, #f44336, #c62828);
+            color: white;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            :root { --cell-size: 28px; }
+            
+            h1 { font-size: 2.2rem; }
+            
+            .container { padding: 15px; }
+            
+            .game-info { gap: 15px; }
+            
+            .info-box { padding: 12px 20px; min-width: 120px; }
+            
+            .info-value { font-size: 1.8rem; }
+            
+            .control-row { flex-direction: column; align-items: center; }
+            
+            select, button { width: 100%; max-width: 300px; }
+            
+            .mobile-controls { display: block; }
+            
+            #themeToggle { top: 15px; right: 15px; }
+            
+            .game-message { padding: 20px 30px; font-size: 1.8rem; }
+        }
+
+        @media (max-width: 480px) {
+            :root { --cell-size: 24px; }
+            
+            h1 { font-size: 1.8rem; }
+            
+            .cell { font-size: 16px; }
+            
+            .info-box { min-width: 100px; padding: 10px 15px; }
+            
+            .info-value { font-size: 1.5rem; }
+        }
+
+        /* Touch Device Support */
+        @media (hover: none) and (pointer: coarse) {
+            .cell:hover:not(.revealed):not(.flagged) {
+                background: var(--cell-closed);
+            }
+            
+            .cell:active:not(.revealed):not(.flagged) {
+                background: #555;
+            }
+        }
+
+        /* Animation for cell reveal */
+        @keyframes reveal {
+            0% { transform: scale(0.8); }
+            100% { transform: scale(1); }
+        }
+
+        .cell.revealed {
+            animation: reveal 0.1s ease;
+        }
+
+        /* Difficulty indicators */
+        .difficulty-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-left: 5px;
+        }
+
+        .easy { background: #4CAF50; }
+        .medium { background: #FF9800; }
+        .hard { background: #f44336; }
+        .expert { background: #9C27B0; }
+    </style>
+</head>
+<body>
+    <!-- Theme Toggle Button -->
+    <button id="themeToggle">
+        <i class="fas fa-moon"></i>
+    </button>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <h1><i class="fas fa-bomb"></i> Сапёр PRO</h1>
+            <p class="subtitle">Классическая игра с современным дизайном</p>
+        </header>
+
+        <!-- Game Information -->
+        <div class="game-info">
+            <div class="info-box">
+                <div class="info-label"><i class="far fa-clock"></i> Время</div>
+                <div class="info-value" id="time">0</div>
+            </div>
+            <div class="info-box">
+                <div class="info-label"><i class="fas fa-bomb"></i> Мины</div>
+                <div class="info-value" id="mines">10</div>
+            </div>
+            <div class="info-box">
+                <div class="info-label"><i class="fas fa-flag"></i> Флаги</div>
+                <div class="info-value" id="flags">0</div>
+            </div>
+        </div>
+
+        <!-- Game Controls -->
+        <div class="controls">
+            <div class="control-row">
+                <select id="difficulty">
+                    <option value="easy">
+                        Лёгкий (9×9, 10 мин)
+                        <span class="difficulty-indicator easy"></span>
+                    </option>
+                    <option value="medium">
+                        Средний (16×16, 40 мин)
+                        <span class="difficulty-indicator medium"></span>
+                    </option>
+                    <option value="hard">
+                        Сложный (16×30, 99 мин)
+                        <span class="difficulty-indicator hard"></span>
+                    </option>
+                    <option value="expert">
+                        Эксперт (24×30, 180 мин)
+                        <span class="difficulty-indicator expert"></span>
+                    </option>
+                </select>
+                
+                <button onclick="newGame()" class="btn-primary">
+                    <i class="fas fa-play"></i> Новая игра
+                </button>
+                
+                <button onclick="pauseGame()" id="pauseBtn" class="btn-secondary">
+                    <i class="fas fa-pause"></i> Пауза
+                </button>
+            </div>
+            
+            <div class="control-row">
+                <button onclick="showTutorial()" class="btn-secondary">
+                    <i class="fas fa-graduation-cap"></i> Обучение
+                </button>
+                
+                <button onclick="showRecords()" class="btn-secondary">
+                    <i class="fas fa-trophy"></i> Рекорды
+                </button>
+                
+                <button onclick="showSettings()" class="btn-secondary">
+                    <i class="fas fa-cog"></i> Настройки
+                </button>
+                
+                <button onclick="showStats()" class="btn-secondary">
+                    <i class="fas fa-chart-bar"></i> Статистика
+                </button>
+            </div>
+        </div>
+
+        <!-- Game Board -->
+        <div class="game-board-container">
+            <div id="game-board"></div>
+        </div>
+
+        <!-- Mobile Controls -->
+        <div class="mobile-controls">
+            <div class="mobile-control-row">
+                <button class="mobile-btn" onclick="newGame()">
+                    <i class="fas fa-redo"></i>
+                    <span>Новая</span>
+                </button>
+                <button class="mobile-btn" onclick="pauseGame()" id="mobilePauseBtn">
+                    <i class="fas fa-pause"></i>
+                    <span>Пауза</span>
+                </button>
+                <button class="mobile-btn" onclick="toggleFlagMode()" id="flagModeBtn">
+                    <i class="fas fa-flag"></i>
+                    <span>Флаг</span>
+                </button>
+            </div>
+            <div class="mobile-control-row">
+                <button class="mobile-btn" onclick="showTutorial()">
+                    <i class="fas fa-question-circle"></i>
+                    <span>Помощь</span>
+                </button>
+                <button class="mobile-btn" onclick="toggleTheme()">
+                    <i class="fas fa-adjust"></i>
+                    <span>Тема</span>
+                </button>
+                <button class="mobile-btn" onclick="hint()">
+                    <i class="fas fa-lightbulb"></i>
+                    <span>Подсказка</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Game Messages -->
+        <div id="winMessage" class="game-message win-message">
+            <i class="fas fa-trophy"></i><br>ПОБЕДА!
+        </div>
+        
+        <div id="loseMessage" class="game-message lose-message">
+            <i class="fas fa-skull-crossbones"></i><br>ПОРАЖЕНИЕ
+        </div>
+    </div>
+
+    <!-- Tutorial Modal -->
+    <div id="tutorialModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-graduation-cap"></i> Обучение</h2>
+                <button class="close-btn" onclick="closeModal('tutorialModal')">&times;</button>
+            </div>
+            
+            <div class="section">
+                <h3><i class="fas fa-target"></i> Цель игры</h3>
+                <p>Откройте все клетки, не содержащие мин. Цифра в клетке показывает, сколько мин находится в соседних клетках.</p>
+            </div>
+            
+            <div class="section">
+                <h3><i class="fas fa-mouse-pointer"></i> Управление</h3>
+                <p><strong>Левый клик</strong> - открыть клетку</p>
+                <p><strong>Правый клик</strong> - поставить/убрать флаг</p>
+                <p><strong>Двойной клик</strong> - открыть соседние клетки</p>
+                <p><strong>На мобильных</strong>: короткое нажатие - открыть, долгое - флаг</p>
+            </div>
+            
+            <div class="section">
+                <h3><i class="fas fa-lightbulb"></i> Стратегия</h3>
+                <p>1. Начинайте с углов - там обычно безопаснее</p>
+                <p>2. Используйте цифры для определения мин</p>
+                <p>3. Если цифра равна количеству флагов вокруг, открывайте остальные клетки</p>
+                <p>4. Не ставьте флаги наугад</p>
+            </div>
+            
+            <button onclick="newGame(); closeModal('tutorialModal');" class="btn-primary" style="width: 100%;">
+                <i class="fas fa-play"></i> Начать игру
+            </button>
+        </div>
+    </div>
+
+    <!-- Records Modal -->
+    <div id="recordsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-trophy"></i> Рекорды</h2>
+                <button class="close-btn" onclick="closeModal('recordsModal')">&times;</button>
+            </div>
+            
+            <div class="section">
+                <h3>Лучшее время</h3>
+                <div id="bestTimes">
+                    <p>Лёгкий: <span id="bestEasy">-</span> сек</p>
+                    <p>Средний: <span id="bestMedium">-</span> сек</p>
+                    <p>Сложный: <span id="bestHard">-</span> сек</p>
+                    <p>Эксперт: <span id="bestExpert">-</span> сек</p>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h3>Статистика</h3>
+                <div id="gameStats">
+                    <p>Игр сыграно: <span id="gamesPlayed">0</span></p>
+                    <p>Побед: <span id="gamesWon">0</span></p>
+                    <p>Процент побед: <span id="winRate">0%</span></p>
+                    <p>Лучшая серия: <span id="bestStreak">0</span></p>
+                </div>
+            </div>
+            
+            <button onclick="clearRecords()" class="btn-danger" style="width: 100%;">
+                <i class="fas fa-trash"></i> Сбросить рекорды
+            </button>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-cog"></i> Настройки</h2>
+                <button class="close-btn" onclick="closeModal('settingsModal')">&times;</button>
+            </div>
+            
+            <div class="section">
+                <h3><i class="fas fa-volume-up"></i> Звук</h3>
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <span>Включить звуки:</span>
+                    <label class="switch">
+                        <input type="checkbox" id="soundToggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h3><i class="fas fa-eye"></i> Внешний вид</h3>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <label>
+                        <input type="checkbox" id="safeZoneToggle" checked>
+                        Показывать безопасную зону при первом клике
+                    </label>
+                    <label>
+                        <input type="checkbox" id="animationsToggle" checked>
+                        Включить анимации
+                    </label>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h3><i class="fas fa-mobile-alt"></i> Мобильные настройки</h3>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <label>
+                        <input type="checkbox" id="vibrationToggle" checked>
+                        Вибрация при кликах
+                    </label>
+                    <label>
+                        <input type="checkbox" id="largeButtonsToggle">
+                        Крупные кнопки на мобильных
+                    </label>
+                </div>
+            </div>
+            
+            <button onclick="saveSettings()" class="btn-primary" style="width: 100%;">
+                <i class="fas fa-save"></i> Сохранить
+            </button>
+        </div>
+    </div>
+
+    <!-- Statistics Modal -->
+    <div id="statsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-chart-bar"></i> Статистика</h2>
+                <button class="close-btn" onclick="closeModal('statsModal')">&times;</button>
+            </div>
+            
+            <div class="section">
+                <h3>Общая статистика</h3>
+                <div id="detailedStats">
+                    <p>Общее время игры: <span id="totalTime">0</span> сек</p>
+                    <p>Открыто клеток: <span id="cellsOpened">0</span></p>
+                    <p>Поставлено флагов: <span id="flagsPlaced">0</span></p>
+                    <p>Использовано подсказок: <span id="hintsUsed">0</span></p>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h3>По уровням сложности</h3>
+                <div id="levelStats">
+                    <!-- Статистика по уровням будет загружена динамически -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--cell-closed);
+            transition: .4s;
+            border-radius: 34px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: var(--num-1);
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+    </style>
+
+    <script>
+        // Конфигурация уровней сложности
+        const DIFFICULTIES = {
+            easy: { rows: 9, cols: 9, mines: 10 },
+            medium: { rows: 16, cols: 16, mines: 40 },
+            hard: { rows: 16, cols: 30, mines: 99 },
+            expert: { rows: 24, cols: 30, mines: 180 }
+        };
+
+        // Состояние игры
+        let gameState = {
+            board: [],
+            rows: 0,
+            cols: 0,
+            mines: 0,
+            flags: 0,
+            revealed: 0,
+            gameOver: false,
+            gameWon: false,
+            firstClick: true,
+            paused: false,
+            timer: 0,
+            timerInterval: null,
+            flagMode: false,
+            theme: 'dark',
+            settings: {
+                sound: true,
+                safeZone: true,
+                animations: true,
+                vibration: true,
+                largeButtons: false
+            },
+            stats: {
+                gamesPlayed: 0,
+                gamesWon: 0,
+                bestTimes: {},
+                currentStreak: 0,
+                bestStreak: 0,
+                totalTime: 0,
+                cellsOpened: 0,
+                flagsPlaced: 0,
+                hintsUsed: 0
+            }
+        };
+
+        // Инициализация при загрузке
+        window.onload = function() {
+            loadSettings();
+            loadStats();
+            newGame();
+            updateThemeButton();
+            checkMobile();
+        };
+
+        // Проверка мобильного устройства
+        function checkMobile() {
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            if (isMobile) {
+                document.body.classList.add('mobile');
+                // Увеличиваем кнопки если нужно
+                if (gameState.settings.largeButtons) {
+                    document.documentElement.style.setProperty('--cell-size', '36px');
+                }
+            }
+        }
+
+        // Новая игра
+        function newGame() {
+            const difficulty = document.getElementById('difficulty').value;
+            const config = DIFFICULTIES[difficulty];
+            
+            // Сброс состояния игры
+            gameState.rows = config.rows;
+            gameState.cols = config.cols;
+            gameState.mines = config.mines;
+            gameState.flags = 0;
+            gameState.revealed = 0;
+            gameState.gameOver = false;
+            gameState.gameWon = false;
+            gameState.firstClick = true;
+            gameState.paused = false;
+            gameState.timer = 0;
+            gameState.board = [];
+            
+            // Сброс таймера
+            clearInterval(gameState.timerInterval);
+            gameState.timerInterval = setInterval(updateTimer, 1000);
+            
+            // Обновление интерфейса
+            updateDisplay();
+            createBoard();
+            
+            // Скрыть сообщения о победе/поражении
+            hideMessages();
+            
+            // Обновить кнопку паузы
+            document.getElementById('pauseBtn').innerHTML = '<i class="fas fa-pause"></i> Пауза';
+            document.getElementById('mobilePauseBtn').innerHTML = '<i class="fas fa-pause"></i> Пауза';
+            
+            // Воспроизвести звук
+            playSound('start');
+        }
+
+        // Создание игрового поля
+        function createBoard() {
+            const boardElement = document.getElementById('game-board');
+            boardElement.innerHTML = '';
+            
+            // Вычисляем оптимальный размер клетки
+            const containerWidth = boardElement.parentElement.clientWidth - 40;
+            const maxCellSize = Math.min(40, Math.floor(containerWidth / gameState.cols) - 2);
+            document.documentElement.style.setProperty('--cell-size', `${maxCellSize}px`);
+            
+            boardElement.style.gridTemplateColumns = `repeat(${gameState.cols}, var(--cell-size))`;
+            
+            // Создаем клетки
+            for (let i = 0; i < gameState.rows * gameState.cols; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.dataset.index = i;
+                
+                // Десктоп события
+                cell.addEventListener('click', () => handleClick(i));
+                cell.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    handleRightClick(i);
+                });
+                cell.addEventListener('dblclick', () => handleDoubleClick(i));
+                
+                // Мобильные события
+                cell.addEventListener('touchstart', (e) => handleTouchStart(e, i));
+                cell.addEventListener('touchend', (e) => handleTouchEnd(e, i));
+                
+                boardElement.appendChild(cell);
+                
+                gameState.board.push({
+                    element: cell,
+                    isMine: false,
+                    isRevealed: false,
+                    isFlagged: false,
+                    isQuestion: false,
+                    neighborMines: 0
+                });
+            }
+            
+            // Обновить отображение мин
+            document.getElementById('mines').textContent = gameState.mines;
+        }
+
+        // Обработка клика
+        function handleClick(index) {
+            if (gameState.gameOver || gameState.paused) return;
+            
+            const cell = gameState.board[index];
+            if (cell.isRevealed || cell.isFlagged) return;
+            
+            if (gameState.firstClick) {
+                placeMines(index);
+                gameState.firstClick = false;
+                if (gameState.settings.safeZone) {
+                    showSafeZone(index);
+                }
+            }
+            
+            if (cell.isMine) {
+                gameOver(false);
+                return;
+            }
+            
+            revealCell(index);
+            checkWin();
+        }
+
+        // Обработка правого клика
+        function handleRightClick(index) {
+            if (gameState.gameOver || gameState.paused || gameState.firstClick) return;
+            
+            const cell = gameState.board[index];
+            if (cell.isRevealed) return;
+            
+            toggleCellMark(cell);
+            updateDisplay();
+            playSound('flag');
+            
+            if (gameState.settings.vibration && navigator.vibrate) {
+                navigator.vibrate(50);
+            }
+        }
+
+        // Обработка двойного клика
+        function handleDoubleClick(index) {
+            const cell = gameState.board[index];
+            if (!cell.isRevealed || cell.neighborMines === 0) return;
+            
+            const neighbors = getNeighbors(index);
+            const flagCount = neighbors.filter(i => gameState.board[i].isFlagged).length;
+            
+            if (flagCount === cell.neighborMines) {
+                neighbors.forEach(i => {
+                    const neighbor = gameState.board[i];
+                    if (!neighbor.isRevealed && !neighbor.isFlagged) {
+                        handleClick(i);
+                    }
+                });
+            }
+            playSound('click');
+        }
+
+        // Мобильное управление
+        let touchStartTime = 0;
+        let touchStartIndex = null;
+        let touchMoved = false;
+
+        function handleTouchStart(e, index) {
+            e.preventDefault();
+            touchStartTime = Date.now();
+            touchStartIndex = index;
+            touchMoved = false;
+        }
+
+        function handleTouchEnd(e, index) {
+            e.preventDefault();
+            const touchEndTime = Date.now();
+            const duration = touchEndTime - touchStartTime;
+            
+            if (touchStartIndex !== index) return;
+            
+            if (gameState.flagMode) {
+                handleRightClick(index);
+            } else if (duration < 300 && !touchMoved) {
+                // Короткое нажатие
+                handleClick(index);
+            } else if (duration >= 300 && !touchMoved) {
+                // Долгое нажатие
+                handleRightClick(index);
+            }
+            
+            touchStartIndex = null;
+        }
+
+        // Переключение режима флага на мобильных
+        function toggleFlagMode() {
+            gameState.flagMode = !gameState.flagMode;
+            const btn = document.getElementById('flagModeBtn');
+            if (gameState.flagMode) {
+                btn.innerHTML = '<i class="fas fa-mouse-pointer"></i><span>Открытие</span>';
+                btn.style.background = 'linear-gradient(135deg, #4CAF50, #2E7D32)';
+            } else {
+                btn.innerHTML = '<i class="fas fa-flag"></i><span>Флаг</span>';
+                btn.style.background = '';
+            }
+            playSound('click');
+        }
+
+        // Размещение мин
+        function placeMines(safeIndex) {
+            let placed = 0;
+            const safeCells = [safeIndex, ...getNeighbors(safeIndex)];
+            
+            while (placed < gameState.mines) {
+                const index = Math.floor(Math.random() * gameState.board.length);
+                
+                if (!safeCells.includes(index) && !gameState.board[index].isMine) {
+                    gameState.board[index].isMine = true;
+                    placed++;
+                    
+                    // Обновляем счетчики соседей
+                    getNeighbors(index).forEach(neighborIndex => {
+                        gameState.board[neighborIndex].neighborMines++;
+                    });
+                }
+            }
+        }
+
+        // Показать безопасную зону
+        function showSafeZone(index) {
+            const safeCells = [index, ...getNeighbors(index)];
+            safeCells.forEach(i => {
+                const cell = gameState.board[i].element;
+                cell.style.backgroundColor = '#4CAF50';
+                cell.style.opacity = '0.7';
+                
+                setTimeout(() => {
+                    cell.style.backgroundColor = '';
+                    cell.style.opacity = '';
+                }, 1500);
+            });
+        }
+
+        // Открыть клетку
+        function revealCell(index) {
+            const cell = gameState.board[index];
+            if (cell.isRevealed || cell.isFlagged) return;
+            
+            cell.isRevealed = true;
+            cell.element.classList.add('revealed');
+            gameState.revealed++;
+            gameState.stats.cellsOpened++;
+            
+            if (cell.neighborMines > 0) {
+                cell.element.textContent = cell.neighborMines;
+                cell.element.classList.add(`num-${cell.neighborMines}`);
+            } else {
+                // Рекурсивно открываем соседей
+                getNeighbors(index).forEach(i => {
+                    if (!gameState.board[i].isRevealed) {
+                        revealCell(i);
+                    }
+                });
+            }
+            
+            updateDisplay();
+            playSound('open');
+        }
+
+        // Переключение отметки клетки
+        function toggleCellMark(cell) {
+            if (!cell.isFlagged && !cell.isQuestion) {
+                // Ставим флаг
+                cell.isFlagged = true;
+                cell.isQuestion = false;
+                cell.element.className = 'cell flagged';
+                cell.element.innerHTML = '<i class="fas fa-flag"></i>';
+                gameState.flags++;
+                gameState.stats.flagsPlaced++;
+            } else if (cell.isFlagged) {
+                // Меняем на вопрос
+                cell.isFlagged = false;
+                cell.isQuestion = true;
+                cell.element.className = 'cell question';
+                cell.element.textContent = '?';
+                gameState.flags--;
+            } else {
+                // Убираем вопрос
+                cell.isQuestion = false;
+                cell.element.className = 'cell';
+                cell.element.textContent = '';
+            }
+        }
+
+        // Получить соседей клетки
+        function getNeighbors(index) {
+            const neighbors = [];
+            const row = Math.floor(index / gameState.cols);
+            const col = index % gameState.cols;
+            
+            for (let r = row - 1; r <= row + 1; r++) {
+                for (let c = col - 1; c <= col + 1; c++) {
+                    if (r >= 0 && r < gameState.rows && c >= 0 && c < gameState.cols && (r !== row || c !== col)) {
+                        neighbors.push(r * gameState.cols + c);
+                    }
+                }
+            }
+            return neighbors;
+        }
+
+        // Обновление отображения
+        function updateDisplay() {
+            document.getElementById('time').textContent = gameState.timer;
+            document.getElementById('flags').textContent = gameState.flags;
+            document.getElementById('mines').textContent = gameState.mines - gameState.flags;
+        }
+
+        // Таймер
+        function updateTimer() {
+            if (!gameState.paused && !gameState.gameOver) {
+                gameState.timer++;
+                updateDisplay();
+            }
+        }
+
+        // Пауза игры
+        function pauseGame() {
+            gameState.paused = !gameState.paused;
+            const btn = document.getElementById('pauseBtn');
+            const mobileBtn = document.getElementById('mobilePauseBtn');
+            
+            if (gameState.paused) {
+                btn.innerHTML = '<i class="fas fa-play"></i> Продолжить';
+                mobileBtn.innerHTML = '<i class="fas fa-play"></i> Продолжить';
+                clearInterval(gameState.timerInterval);
+            } else {
+                btn.innerHTML = '<i class="fas fa-pause"></i> Пауза';
+                mobileBtn.innerHTML = '<i class="fas fa-pause"></i> Пауза';
+                gameState.timerInterval = setInterval(updateTimer, 1000);
+            }
+            playSound('click');
+        }
+
+        // Конец игры
+        function gameOver(isWin) {
+            gameState.gameOver = true;
+            clearInterval(gameState.timerInterval);
+            
+            // Обновить статистику
+            gameState.stats.gamesPlayed++;
+            if (isWin) {
+                gameState.stats.gamesWon++;
+                gameState.stats.currentStreak++;
+                if (gameState.stats.currentStreak > gameState.stats.bestStreak) {
+                    gameState.stats.bestStreak = gameState.stats.currentStreak;
+                }
+                
+                // Сохранить лучшее время
+                const difficulty = document.getElementById('difficulty').value;
+                if (!gameState.stats.bestTimes[difficulty] || gameState.timer < gameState.stats.bestTimes[difficulty]) {
+                    gameState.stats.bestTimes[difficulty] = gameState.timer;
+                }
+                
+                showWinMessage();
+                playSound('win');
+            } else {
+                gameState.stats.currentStreak = 0;
+                revealAllMines();
+                showLoseMessage();
+                playSound('lose');
+            }
+            
+            gameState.stats.totalTime += gameState.timer;
+            saveStats();
+            updateRecordsDisplay();
+        }
+
+        // Показать все мины
+        function revealAllMines() {
+            gameState.board.forEach(cell => {
+                if (cell.isMine && !cell.isFlagged) {
+                    cell.element.innerHTML = '<i class="fas fa-bomb"></i>';
+                    cell.element.classList.add('mine');
+                } else if (!cell.isMine && cell.isFlagged) {
+                    cell.element.innerHTML = '<i class="fas fa-times"></i>';
+                    cell.element.style.background = '#ff4444';
+                }
+            });
+        }
+
+        // Проверка победы
+        function checkWin() {
+            if (gameState.revealed + gameState.mines === gameState.rows * gameState.cols) {
+                gameState.gameWon = true;
+                gameOver(true);
+            }
+        }
+
+        // Показать сообщение о победе
+        function showWinMessage() {
+            const message = document.getElementById('winMessage');
+            message.style.display = 'block';
+            
+            setTimeout(() => {
+                message.style.display = 'none';
+            }, 3000);
+        }
+
+        // Показать сообщение о поражении
+        function showLoseMessage() {
+            const message = document.getElementById('loseMessage');
+            message.style.display = 'block';
+            
+            setTimeout(() => {
+                message.style.display = 'none';
+            }, 3000);
+        }
+
+        // Скрыть все сообщения
+        function hideMessages() {
+            document.getElementById('winMessage').style.display = 'none';
+            document.getElementById('loseMessage').style.display = 'none';
+        }
+
+        // Подсказка
+        function hint() {
+            if (gameState.gameOver || gameState.firstClick) return;
+            
+            // Находим безопасную клетку
+            const safeCells = [];
+            gameState.board.forEach((cell, index) => {
+                if (!cell.isRevealed && !cell.isFlagged && !cell.isQuestion && !cell.isMine) {
+                    safeCells.push(index);
+                }
+            });
+            
+            if (safeCells.length > 0) {
+                const randomIndex = safeCells[Math.floor(Math.random() * safeCells.length)];
+                const cell = gameState.board[randomIndex].element;
+                
+                // Подсветить клетку
+                cell.style.boxShadow = '0 0 20px #4CAF50';
+                setTimeout(() => {
+                    cell.style.boxShadow = '';
+                }, 2000);
+                
+                gameState.stats.hintsUsed++;
+                playSound('hint');
+            }
+        }
+
+        // Звуки
+        function playSound(type) {
+            if (!gameState.settings.sound) return;
+            
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            switch(type) {
+                case 'click':
+                    oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+                    break;
+                case 'open':
+                    oscillator.frequency.setValueAtTime(600, audioContext.currentTime);
+                    break;
+                case 'flag':
+                    oscillator.frequency.setValueAtTime(1000, audioContext.currentTime);
+                    break;
+                case 'win':
+                    oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime);
+                    setTimeout(() => oscillator.frequency.setValueAtTime(659.25, audioContext.currentTime + 0.1), 100);
+                    setTimeout(() => oscillator.frequency.setValueAtTime(783.99, audioContext.currentTime + 0.2), 200);
+                    break;
+                case 'lose':
+                    oscillator.frequency.setValueAtTime(200, audioContext.currentTime);
+                    break;
+                case 'start':
+                    oscillator.frequency.setValueAtTime(400, audioContext.currentTime);
+                    setTimeout(() => oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1), 100);
+                    break;
+                case 'hint':
+                    oscillator.frequency.setValueAtTime(1200, audioContext.currentTime);
+                    break;
+            }
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+            
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.1);
+        }
+
+        // Темы
+        function toggleTheme() {
+            gameState.theme = gameState.theme === 'dark' ? 'light' : 'dark';
+            document.body.classList.toggle('light-theme', gameState.theme === 'light');
+            localStorage.setItem('minesweeperTheme', gameState.theme);
+            updateThemeButton();
+            playSound('click');
+        }
+
+        function updateThemeButton() {
+            const btn = document.getElementById('themeToggle');
+            const icon = btn.querySelector('i');
+            icon.className = gameState.theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+        }
+
+        function loadSettings() {
+            const savedTheme = localStorage.getItem('minesweeperTheme');
+            if (savedTheme) {
+                gameState.theme = savedTheme;
+                document.body.classList.toggle('light-theme', savedTheme === 'light');
+            }
+            
+            const savedSettings = localStorage.getItem('minesweeperSettings');
+            if (savedSettings) {
+                gameState.settings = JSON.parse(savedSettings);
+            }
+            
+            // Применить настройки интерфейса
+            document.getElementById('soundToggle').checked = gameState.settings.sound;
+            document.getElementById('safeZoneToggle').checked = gameState.settings.safeZone;
+            document.getElementById('animationsToggle').checked = gameState.settings.animations;
+            document.getElementById('vibrationToggle').checked = gameState.settings.vibration;
+            document.getElementById('largeButtonsToggle').checked = gameState.settings.largeButtons;
+        }
+
+        function saveSettings() {
+            gameState.settings.sound = document.getElementById('soundToggle').checked;
+            gameState.settings.safeZone = document.getElementById('safeZoneToggle').checked;
+            gameState.settings.animations = document.getElementById('animationsToggle').checked;
+            gameState.settings.vibration = document.getElementById('vibrationToggle').checked;
+            gameState.settings.largeButtons = document.getElementById('largeButtonsToggle').checked;
+            
+            localStorage.setItem('minesweeperSettings', JSON.stringify(gameState.settings));
+            closeModal('settingsModal');
+            playSound('click');
+            
+            // Применить изменения
+            if (gameState.settings.largeButtons && document.body.classList.contains('mobile')) {
+                document.documentElement.style.setProperty('--cell-size', '36px');
+            }
+        }
+
+        // Статистика
+        function loadStats() {
+            const savedStats = localStorage.getItem('minesweeperStats');
+            if (savedStats) {
+                gameState.stats = JSON.parse(savedStats);
+            }
+            updateRecordsDisplay();
+        }
+
+        function saveStats() {
+            localStorage.setItem('minesweeperStats', JSON.stringify(gameState.stats));
+        }
+
+        function updateRecordsDisplay() {
+            document.getElementById('bestEasy').textContent = gameState.stats.bestTimes.easy || '-';
+            document.getElementById('bestMedium').textContent = gameState.stats.bestTimes.medium || '-';
+            document.getElementById('bestHard').textContent = gameState.stats.bestTimes.hard || '-';
+            document.getElementById('bestExpert').textContent = gameState.stats.bestTimes.expert || '-';
+            
+            document.getElementById('gamesPlayed').textContent = gameState.stats.gamesPlayed;
+            document.getElementById('gamesWon').textContent = gameState.stats.gamesWon;
+            
+            const winRate = gameState.stats.gamesPlayed > 0 
+                ? Math.round((gameState.stats.gamesWon / gameState.stats.gamesPlayed) * 100)
+                : 0;
+            document.getElementById('winRate').textContent = `${winRate}%`;
+            
+            document.getElementById('bestStreak').textContent = gameState.stats.bestStreak;
+            
+            // Подробная статистика
+            document.getElementById('totalTime').textContent = gameState.stats.totalTime;
+            document.getElementById('cellsOpened').textContent = gameState.stats.cellsOpened;
+            document.getElementById('flagsPlaced').textContent = gameState.stats.flagsPlaced;
+            document.getElementById('hintsUsed').textContent = gameState.stats.hintsUsed;
+        }
+
+        function clearRecords() {
+            if (confirm('Вы уверены, что хотите сбросить всю статистику?')) {
+                gameState.stats = {
+                    gamesPlayed: 0,
+                    gamesWon: 0,
+                    bestTimes: {},
+                    currentStreak: 0,
+                    bestStreak: 0,
+                    totalTime: 0,
+                    cellsOpened: 0,
+                    flagsPlaced: 0,
+                    hintsUsed: 0
+                };
+                saveStats();
+                updateRecordsDisplay();
+                playSound('click');
+            }
+        }
+
+        // Модальные окна
+        function showTutorial() {
+            document.getElementById('tutorialModal').style.display = 'flex';
+            playSound('click');
+        }
+
+        function showRecords() {
+            document.getElementById('recordsModal').style.display = 'flex';
+            playSound('click');
+        }
+
+        function showSettings() {
+            document.getElementById('settingsModal').style.display = 'flex';
+            playSound('click');
+        }
+
+        function showStats() {
+            document.getElementById('statsModal').style.display = 'flex';
+            playSound('click');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+            playSound('click');
+        }
+
+        // Обработка клавиатуры
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                pauseGame();
+            } else if (e.code === 'KeyN') {
+                newGame();
+            } else if (e.code === 'KeyH') {
+                hint();
+            } else if (e.code === 'KeyT') {
+                toggleTheme();
+            }
+        });
+
+        // Обработка изменения размера окна
+        window.addEventListener('resize', () => {
+            if (!gameState.gameOver) {
+                createBoard();
+            }
+        });
+    </script>
+</body>
+</html>
